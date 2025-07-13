@@ -1,7 +1,5 @@
 import {HomePageComponent} from '../home/pages/homepage.component';
-import StaticGroup = Phaser.Physics.Arcade.StaticGroup;
 import Phaser from 'phaser';
-import Sprite = Phaser.GameObjects.Sprite;
 
 export class GameScene extends Phaser.Scene {
   // game entities
@@ -16,6 +14,15 @@ export class GameScene extends Phaser.Scene {
   WALL_HEIGHT: number = 48;
   WALL_WIDTH: number = 48;
 
+  // Scale configurations for all game elements
+  SCALES = {
+    wall: 0.05,       // Indestructible walls
+    block: 0.05,      // Destructible blocks
+    player: 0.03,     // Player character
+    bomb: 0.05,       // Bombs placed by player
+    explosion: 0.05   // Explosion sprites
+  };
+
   // other
   spaceKey!: Phaser.Input.Keyboard.Key;
 
@@ -25,6 +32,11 @@ export class GameScene extends Phaser.Scene {
 
   preload() {
     // load assets
+    this.load.image('block', 'block.png');
+    this.load.image('wall', 'block.png');
+    this.load.image('player', 'player.png');
+    // this.load.image('bomb', 'bomb.png');
+    this.load.image('explosion', 'explosion.png');
   }
 
   create() {
@@ -67,16 +79,33 @@ export class GameScene extends Phaser.Scene {
       'WWWWWWWWWWWWWWW'
     ];
 
+    // const level = [
+    //   'WWWWWWWWWWWWWWW',
+    //   'W             W',
+    //   'W             W',
+    //   'W             W',
+    //   'W             W',
+    //   'W             W',
+    //   'W             W',
+    //   'W             W',
+    //   'W             W',
+    //   'W             W',
+    //   'W             W',
+    //   'W             W',
+    //   'WWWWWWWWWWWWWWW'
+    // ];
+
 
     for (let y = 0; y < level.length; y++) {
       for (let x = 0; x < level[y].length; x++) {
         if (level[y][x] === 'W') {
           const wall = this.walls.create(x * 50, y * 50, 'wall');
-          wall.setScale(1.5);
+          wall.setScale(this.SCALES.wall);
           wall.refreshBody();        // IMPORTANT: update physics body to match scale
         } else if (level[y][x] === 'B') {
           const block = this.blocks.create(x * 50, y * 50, 'block');
-          block.setScale(1.5);
+          block.setScale(this.SCALES.block);
+          block.setTint(0xFFAAAA); // Light red tint to distinguish from walls
           block.refreshBody();
         }
       }
@@ -84,10 +113,11 @@ export class GameScene extends Phaser.Scene {
 
     // Share the group with Angular component
     this.component.walls = this.walls;
-    this.component.bombs = this.bombs;
+    // this.component.bombs = this.bombs;
 
     // Create the player
     this.player = this.physics.add.sprite(32 + 16, 32 + 16, 'player'); // Center of tile
+    this.player.setScale(this.SCALES.player);
     this.player.setCollideWorldBounds(true);
     this.cameras.main.startFollow(this.player);
 
@@ -98,7 +128,7 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.explosions, this.walls);
 
     // add collision for explosion destroying block
-    this.physics.add.collider(this.blocks, this.explosions, this.handleDestroyingBlock)
+    // this.physics.add.collider(this.blocks, this.explosions, this.handleDestroyingBlock)
 
     // Setup cursor keys
     this.cursors = this.input.keyboard!.createCursorKeys();
@@ -135,7 +165,7 @@ export class GameScene extends Phaser.Scene {
     body.velocity.normalize().scale(speed);
   }
 
-  handleDestroyingBlock(){
+  handleDestroyingBlock() {
 
   }
 
@@ -156,21 +186,24 @@ export class GameScene extends Phaser.Scene {
 
   createBomb() {
     const bomb = this.bombs.create(this.player.x, this.player.y, 'bomb')
-    bomb.setScale(1.5);
+    bomb.setScale(this.SCALES.bomb);
     bomb.refreshBody();
-    this.time.delayedCall(1000, () => {
-      this.showBombExplosions(bomb);
+    this.time.delayedCall(3000, () => {
+      this.createExplosions(bomb);
       bomb.destroy();
     })
   }
 
-  private showBombExplosions(bomb: any) {
+  private createExplosions(bomb: any) {
+    console.log("creating explosions")
     let canExplodeRight = true;
     let canExplodeLeft = true;
     let canExplodeUp = true;
     let canExplodeDown = true;
     for (let i = 1; i <= 3; i++) {
       // create horizontal explosion to the right
+      const xPos = bomb.x + (bomb.width * i)
+      const isRightExplosionCreated = this.createExplosion(xPos, bomb.y);
       if (canExplodeRight) {
         const xPos = bomb.x + (bomb.width * i)
         const isRightExplosionCreated = this.createExplosion(xPos, bomb.y);
@@ -210,10 +243,12 @@ export class GameScene extends Phaser.Scene {
   createExplosion(x: number, y: number) {
     const isExplosionPosCollidingWithWall = this.getIsExplosionPosCollidingWithWall(x, y);
     if (isExplosionPosCollidingWithWall) {
+      console.log("explosion overlaps wall")
       return false;
     }
+    console.log("creating explosion")
     const explosion = this.explosions.create(x, y, 'explosion');
-    explosion.setScale(1.5);
+    explosion.setScale(this.SCALES.explosion);
     explosion.refreshBody();
     this.time.delayedCall(1000, () => {
       explosion.destroy();
@@ -222,10 +257,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   getIsExplosionPosCollidingWithWall(x: number, y: number) {
-    const found = this.walls.getChildren().find(obj => {
+    return this.walls.getChildren().find(obj => {
       const wall = obj as Phaser.GameObjects.Sprite;
       return wall.getBounds().contains(x, y);
     });
-    return found;
   }
 }
