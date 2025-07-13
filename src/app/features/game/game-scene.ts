@@ -55,6 +55,10 @@ export class GameScene extends Phaser.Scene {
     worldHeight: 1200,           // World height
     playerStartX: 32 + 16,       // Player starting X position
     playerStartY: 32 + 16,       // Player starting Y position
+    physicsBodySize: 45,         // Fixed physics body size
+    tileSize: 48,                // Fixed size for walls and blocks
+    wallImageSize: 800,          // Original wall.png dimensions (you'd need to check this)
+    blockImageSize: 600,         // Original block.png dimensions (you'd need to check this)
   };
 
   // other
@@ -134,12 +138,12 @@ export class GameScene extends Phaser.Scene {
       for (let x = 0; x < level[y].length; x++) {
         if (level[y][x] === 'W') {
           const wall = this.walls.create(x * this.GAME_CONFIG.gridSize, y * this.GAME_CONFIG.gridSize, 'wall');
-          wall.setScale(this.SCALES.wall);
-          wall.refreshBody();        // IMPORTANT: update physics body to match scale
+          wall.setDisplaySize(this.GAME_CONFIG.tileSize, this.GAME_CONFIG.tileSize); // Force exact size
+          wall.refreshBody();
         } else if (level[y][x] === 'B') {
           const block = this.blocks.create(x * this.GAME_CONFIG.gridSize, y * this.GAME_CONFIG.gridSize, 'block');
-          block.setScale(this.SCALES.block);
-          block.setTint(0xFFAAAA); // Light red tint to distinguish from walls
+          block.setDisplaySize(this.GAME_CONFIG.tileSize, this.GAME_CONFIG.tileSize); // Force exact size
+          block.setTint(0xFFAAAA);
           block.refreshBody();
         } else if (level[y][x] === 'P') {
           // Create the player
@@ -190,7 +194,7 @@ export class GameScene extends Phaser.Scene {
       .setAlpha(0.7);
 
     // Down button
-    this.downButton = this.add.image(margin + buttonSpacing, height - margin, 'down_button')
+    this.downButton = this.add.image(margin + buttonSpacing, height - margin - 20, 'down_button')
       .setScale(buttonSize)
       .setInteractive()
       .setScrollFactor(0)
@@ -353,7 +357,7 @@ export class GameScene extends Phaser.Scene {
 
   handlePlayerAndExplosionCollision() {
     this.showRestartDialog();
-    // this.restartUI.forEach((el: { destroy: () => any; }) => el.destroy());
+    this.player.destroy();
   }
 
   getPlayerOverlapsExistingBomb(): any {
@@ -386,6 +390,11 @@ export class GameScene extends Phaser.Scene {
     const explosionPos = (i: number) => (this.GAME_CONFIG.gridSize / 1.5) * i
 
     for (let i = 1; i <= this.GAME_CONFIG.explosionRange; i++) {
+      // place the middle bomb
+      if (i == 1) {
+        this.createExplosion(bomb.x, bomb.y);
+      }
+
       // // create horizontal explosion to the right
       if (canExplodeRight) {
         // const xPos = bomb.x + (this.player.width * i)

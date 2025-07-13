@@ -60,7 +60,10 @@ export class HomePageComponent {
         autoCenter: Phaser.Scale.CENTER_BOTH
       },
       scene: new GameScene(this),
-      parent: 'game-container'
+      parent: 'game-container',
+      input: {
+        activePointers: 3 // Allow 3 simultaneous touch inputs
+      }
     };
 
     this.game = new Phaser.Game(config);
