@@ -21,7 +21,7 @@ export class GameScene extends Phaser.Scene {
 
   // Timing configurations
   TIMINGS = {
-    bombExplosionDelay: 3000,    // Time before bomb explodes (ms)
+    bombExplosionDelay: 2000,    // Time before bomb explodes (ms)
     explosionDuration: 1000,     // How long explosions stay visible (ms)
   };
 
@@ -49,7 +49,7 @@ export class GameScene extends Phaser.Scene {
     this.load.image('block', 'block.png');
     this.load.image('wall', 'wall.png');
     this.load.image('player', 'player.png');
-    // this.load.image('bomb', 'bomb.png');
+    this.load.image('bomb', 'bomb.png');
     this.load.image('explosion', 'explosion.png');
     this.load.image('grass', 'grass.png');
   }
@@ -115,10 +115,10 @@ export class GameScene extends Phaser.Scene {
           // Create the player
           this.player = this.physics.add.sprite(x * this.GAME_CONFIG.playerStartX, y * this.GAME_CONFIG.playerStartY, 'player'); // Center of tile
           this.player.setScale(this.SCALES.player);
+          this.player.refreshBody();
+          // this.player.body.setSize(100,20)
           this.player.setCollideWorldBounds(true);
           this.cameras.main.startFollow(this.player);
-        } else if (level[y][x] === ' ') {
-          // x = x - 1;
         }
       }
     }
@@ -200,10 +200,13 @@ export class GameScene extends Phaser.Scene {
     let canExplodeLeft = true;
     let canExplodeUp = true;
     let canExplodeDown = true;
+    const explosionPos = (i: number) => (this.GAME_CONFIG.gridSize / 1.5) * i
+
     for (let i = 1; i <= this.GAME_CONFIG.explosionRange; i++) {
       // // create horizontal explosion to the right
       if (canExplodeRight) {
-        const xPos = bomb.x + (bomb.width * i)
+        // const xPos = bomb.x + (this.player.width * i)
+        const xPos = bomb.x + explosionPos(i);
         const isRightExplosionCreated = this.createExplosion(xPos, bomb.y);
         if (!isRightExplosionCreated) {
           canExplodeRight = false;
@@ -212,7 +215,7 @@ export class GameScene extends Phaser.Scene {
 
       // create horizontal explosion to the left
       if (canExplodeLeft) {
-        const xPos = bomb.x - (bomb.width * i)
+        const xPos = bomb.x - explosionPos(i)
         const isLeftExplosionCreated = this.createExplosion(xPos, bomb.y);
         if (!isLeftExplosionCreated) {
           canExplodeLeft = false;
@@ -221,7 +224,7 @@ export class GameScene extends Phaser.Scene {
 
       // create vertical explosion to up
       if (canExplodeDown) {
-        const yPos = bomb.y + (bomb.width * i)
+        const yPos = bomb.y + explosionPos(i)
         const isDownExplosionCreated = this.createExplosion(bomb.x, yPos);
         if (!isDownExplosionCreated) {
           canExplodeDown = false;
@@ -229,7 +232,7 @@ export class GameScene extends Phaser.Scene {
       }
       // create vertical explosion to down
       if (canExplodeUp) {
-        const yPos = bomb.y - (bomb.width * i)
+        const yPos = bomb.y - explosionPos(i)
         const isUpExplosionCreated = this.createExplosion(bomb.x, yPos);
         if (!isUpExplosionCreated) {
           canExplodeUp = false;
