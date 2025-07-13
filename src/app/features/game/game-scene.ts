@@ -2,6 +2,9 @@ import {HomePageComponent} from '../home/pages/homepage.component';
 import Phaser from 'phaser';
 
 export class GameScene extends Phaser.Scene {
+  // player state
+  isPlayerAlive: boolean = true
+
   // game entities
   walls!: Phaser.Physics.Arcade.StaticGroup;
   player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
@@ -33,7 +36,7 @@ export class GameScene extends Phaser.Scene {
     player: 0.04,     // Player character
     bomb: 0.04,       // Bombs placed by player
     explosion: 0.04,  // Explosion sprites (increased for visibility)
-    button: 0.12      // Mobile buttons (increased for better touch experience)
+    button: 0.16      // Mobile buttons (increased for better touch experience)
   };
 
   // Timing configurations
@@ -56,6 +59,7 @@ export class GameScene extends Phaser.Scene {
 
   // other
   spaceKey!: Phaser.Input.Keyboard.Key;
+  restartUI: any = [];
 
   constructor(private component: HomePageComponent) {
     super({key: 'MyScene'});
@@ -79,25 +83,24 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    const {width, height} = this.scale;
-    this.add.tileSprite(0, 0, width, height, 'grass')
-      .setOrigin(0, 0);
-    // .setScrollFactor(0);
+    // define world boundaries
+    const worldWidth = this.GAME_CONFIG.worldWidth;
+    const worldHeight = this.GAME_CONFIG.worldHeight;
 
     // create keys
     this.spaceKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
     // calculate map initial position
-    const middleX = ((this.component.width / 2) / 1) * -1;
+    const middleX = ((this.component.width / 2)) * -1;
     const middleY = ((this.component.height / 2) / 3) * -1;
-
-    // define world boundaries
-    const worldWidth = this.GAME_CONFIG.worldWidth;
-    const worldHeight = this.GAME_CONFIG.worldHeight;
 
     // Set the bounds of the world (for physics and camera)
     this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
     this.cameras.main.setBounds(middleX, middleY, worldWidth, worldHeight);
+
+    // Create grass background covering the entire world
+    this.add.tileSprite(middleX, middleY, worldWidth, worldHeight, 'grass')
+      .setOrigin(0, 0);
 
     // Handle resize events
     this.scale.on('resize', this.handleResize, this);
@@ -171,7 +174,7 @@ export class GameScene extends Phaser.Scene {
   createMobileButtons() {
     const {width, height} = this.scale;
     const buttonSize = this.SCALES.button;
-    
+
     // Responsive button positioning
     const isLandscape = width > height;
     const margin = isLandscape ? 60 : 80;
@@ -230,7 +233,7 @@ export class GameScene extends Phaser.Scene {
 
   updateButtonPositions() {
     if (!this.upButton) return; // Exit if buttons haven't been created yet
-    
+
     const {width, height} = this.scale;
     const isLandscape = width > height;
     const margin = isLandscape ? 60 : 80;
@@ -241,7 +244,7 @@ export class GameScene extends Phaser.Scene {
     this.downButton.setPosition(margin + buttonSpacing, height - margin);
     this.leftButton.setPosition(margin, height - margin - buttonSpacing);
     this.rightButton.setPosition(margin + buttonSpacing * 2, height - margin - buttonSpacing);
-    
+
     // Update bomb button position
     const bombButtonX = width - margin - (isLandscape ? 40 : 60);
     this.bombButton.setPosition(bombButtonX, height - margin - buttonSpacing);
@@ -349,7 +352,8 @@ export class GameScene extends Phaser.Scene {
   }
 
   handlePlayerAndExplosionCollision() {
-    this.player.destroy();
+    this.showRestartDialog();
+    // this.restartUI.forEach((el: { destroy: () => any; }) => el.destroy());
   }
 
   getPlayerOverlapsExistingBomb(): any {
@@ -456,5 +460,49 @@ export class GameScene extends Phaser.Scene {
       const wall = obj as Phaser.GameObjects.Sprite;
       return wall.getBounds().contains(x, y);
     });
+  }
+
+  showRestartDialog() {
+
+    // 2. Dialog background box
+    const dialog = this.add.rectangle(
+      0,
+      this.cameras.main.y,
+      300,
+      200,
+      0xffffff,
+      1
+    );
+    dialog.setStrokeStyle(2, 0x000000);
+
+    // 3. Text
+    const text = this.add.text(
+      0,
+      0,
+      'Game Over',
+      {fontSize: '32px', color: '#000'}
+    ).setOrigin(0.5);
+
+    // 4. Restart button
+    const restartBtn = this.add.text(
+      0,
+      40,
+      'Restart',
+      {
+        fontSize: '24px',
+        backgroundColor: '#000',
+        color: '#fff',
+        padding: {x: 20, y: 10},
+      }
+    )
+      .setOrigin(0)
+      .setInteractive();
+
+    restartBtn.on('pointerdown', () => {
+      this.scene.restart();
+    });
+
+    // 5. Group them to destroy later if needed
+    this.restartUI = [dialog, text, restartBtn];
   }
 }

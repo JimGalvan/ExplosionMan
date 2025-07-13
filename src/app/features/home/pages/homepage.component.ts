@@ -52,7 +52,7 @@ export class HomePageComponent {
       physics: {
         default: 'arcade',
         arcade: {
-          debug: true
+          debug: false
         }
       },
       scale: {
@@ -64,7 +64,7 @@ export class HomePageComponent {
     };
 
     this.game = new Phaser.Game(config);
-    
+
     // Handle window resize
     window.addEventListener('resize', () => {
       this.game.scale.resize(window.innerWidth, window.innerHeight);
