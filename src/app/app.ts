@@ -1,9 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import {HomePageComponent} from './features/home/pages/homepage.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet],
+  imports: [RouterOutlet, HomePageComponent],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
