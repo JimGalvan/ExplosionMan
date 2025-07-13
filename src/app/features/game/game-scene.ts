@@ -10,13 +10,30 @@ export class GameScene extends Phaser.Scene {
   explosions!: Phaser.Physics.Arcade.StaticGroup;
   blocks!: Phaser.Physics.Arcade.StaticGroup;
 
+  // Mobile buttons
+  upButton!: Phaser.GameObjects.Image;
+  downButton!: Phaser.GameObjects.Image;
+  leftButton!: Phaser.GameObjects.Image;
+  rightButton!: Phaser.GameObjects.Image;
+  bombButton!: Phaser.GameObjects.Image;
+
+  // Mobile input states
+  mobileInput = {
+    up: false,
+    down: false,
+    left: false,
+    right: false,
+    bomb: false
+  };
+
   // Scale configurations for all game elements
   SCALES = {
     wall: 0.06,       // Indestructible walls
     block: 0.07,      // Destructible blocks
     player: 0.04,     // Player character
     bomb: 0.04,       // Bombs placed by player
-    explosion: 0.04    // Explosion sprites (increased for visibility)
+    explosion: 0.04,  // Explosion sprites (increased for visibility)
+    button: 0.08      // Mobile buttons
   };
 
   // Timing configurations
@@ -52,6 +69,13 @@ export class GameScene extends Phaser.Scene {
     this.load.image('bomb', 'bomb.png');
     this.load.image('explosion', 'explosion.png');
     this.load.image('grass', 'grass.png');
+
+    // Load mobile button assets
+    this.load.image('up_button', 'buttons/up_button.png');
+    this.load.image('down_button', 'buttons/down_button.png');
+    this.load.image('left_button', 'buttons/left_button.png');
+    this.load.image('right_button', 'buttons/right_button.png');
+    this.load.image('place_bomb_button', 'buttons/place_bomb_button.png');
   }
 
   create() {
@@ -64,7 +88,7 @@ export class GameScene extends Phaser.Scene {
     this.spaceKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
     // calculate map initial position
-    const middleX = ((this.component.width / 2) / 2) * -1;
+    const middleX = ((this.component.width / 2) / 1) * -1;
     const middleY = ((this.component.height / 2) / 3) * -1;
 
     // define world boundaries
@@ -123,6 +147,9 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    // Create mobile buttons
+    this.createMobileButtons();
+
     // Share the group with Angular component
     this.component.walls = this.walls;
     // this.component.bombs = this.bombs;
@@ -138,6 +165,121 @@ export class GameScene extends Phaser.Scene {
     this.cursors = this.input.keyboard!.createCursorKeys();
   }
 
+  createMobileButtons() {
+    const {width, height} = this.scale;
+    const buttonSize = this.SCALES.button;
+    const margin = 80;
+    const buttonSpacing = 120;
+
+    // Create movement buttons (left side)
+    // Up button
+    this.upButton = this.add.image(margin + buttonSpacing, height - margin - buttonSpacing * 2, 'up_button')
+      .setScale(buttonSize)
+      .setInteractive()
+      .setScrollFactor(0)
+      .setDepth(1000);
+
+    // Down button
+    this.downButton = this.add.image(margin + buttonSpacing, height - margin, 'down_button')
+      .setScale(buttonSize)
+      .setInteractive()
+      .setScrollFactor(0)
+      .setDepth(1000);
+
+    // Left button
+    this.leftButton = this.add.image(margin, height - margin - buttonSpacing, 'left_button')
+      .setScale(buttonSize)
+      .setInteractive()
+      .setScrollFactor(0)
+      .setDepth(1000);
+
+    // Right button
+    this.rightButton = this.add.image(margin + buttonSpacing * 2, height - margin - buttonSpacing, 'right_button')
+      .setScale(buttonSize)
+      .setInteractive()
+      .setScrollFactor(0)
+      .setDepth(1000);
+
+    // Bomb button (right side)
+    this.bombButton = this.add.image(width - margin - 60, height - margin - buttonSpacing, 'place_bomb_button')
+      .setScale(buttonSize)
+      .setInteractive()
+      .setScrollFactor(0)
+      .setDepth(1000);
+
+    // Add button event listeners
+    this.setupButtonEvents();
+  }
+
+  setupButtonEvents() {
+    // Movement buttons
+    this.upButton.on('pointerdown', () => {
+      this.mobileInput.up = true;
+      this.upButton.setTint(0xcccccc);
+    });
+    this.upButton.on('pointerup', () => {
+      this.mobileInput.up = false;
+      this.upButton.clearTint();
+    });
+    this.upButton.on('pointerout', () => {
+      this.mobileInput.up = false;
+      this.upButton.clearTint();
+    });
+
+    this.downButton.on('pointerdown', () => {
+      this.mobileInput.down = true;
+      this.downButton.setTint(0xcccccc);
+    });
+    this.downButton.on('pointerup', () => {
+      this.mobileInput.down = false;
+      this.downButton.clearTint();
+    });
+    this.downButton.on('pointerout', () => {
+      this.mobileInput.down = false;
+      this.downButton.clearTint();
+    });
+
+    this.leftButton.on('pointerdown', () => {
+      this.mobileInput.left = true;
+      this.leftButton.setTint(0xcccccc);
+    });
+    this.leftButton.on('pointerup', () => {
+      this.mobileInput.left = false;
+      this.leftButton.clearTint();
+    });
+    this.leftButton.on('pointerout', () => {
+      this.mobileInput.left = false;
+      this.leftButton.clearTint();
+    });
+
+    this.rightButton.on('pointerdown', () => {
+      this.mobileInput.right = true;
+      this.rightButton.setTint(0xcccccc);
+    });
+    this.rightButton.on('pointerup', () => {
+      this.mobileInput.right = false;
+      this.rightButton.clearTint();
+    });
+    this.rightButton.on('pointerout', () => {
+      this.mobileInput.right = false;
+      this.rightButton.clearTint();
+    });
+
+    // Bomb button
+    this.bombButton.on('pointerdown', () => {
+      this.mobileInput.bomb = true;
+      this.bombButton.setTint(0xcccccc);
+    });
+    this.bombButton.on('pointerup', () => {
+      this.mobileInput.bomb = false;
+      this.bombButton.clearTint();
+    });
+    this.bombButton.on('pointerout', () => {
+      this.mobileInput.bomb = false;
+      this.bombButton.clearTint();
+    });
+  }
+
   override update() {
     // game loop
     const speed = this.GAME_CONFIG.playerSpeed;
@@ -146,19 +288,20 @@ export class GameScene extends Phaser.Scene {
     if (!body) return;
     body.setVelocity(0);
 
-    if (this.cursors.left?.isDown) {
+    // Handle keyboard input
+    if (this.cursors.left?.isDown || this.mobileInput.left) {
       body.setVelocityX(-speed);
-    } else if (this.cursors.right?.isDown) {
+    } else if (this.cursors.right?.isDown || this.mobileInput.right) {
       body.setVelocityX(speed);
     }
 
-    if (this.cursors.up?.isDown) {
+    if (this.cursors.up?.isDown || this.mobileInput.up) {
       body.setVelocityY(-speed);
-    } else if (this.cursors.down?.isDown) {
+    } else if (this.cursors.down?.isDown || this.mobileInput.down) {
       body.setVelocityY(speed);
     }
 
-    if (this.spaceKey.isDown) {
+    if (this.spaceKey.isDown || this.mobileInput.bomb) {
       const existingBomb = this.getPlayerOverlapsExistingBomb();
       if (!existingBomb) {
         this.createBomb()

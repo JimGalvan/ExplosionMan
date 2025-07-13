@@ -37,7 +37,7 @@ export class HomePageComponent {
   ngAfterViewInit(): void {
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
-      width: 1000,
+      width: window.innerWidth,
       height: 600,
       physics: {
         default: 'arcade',
