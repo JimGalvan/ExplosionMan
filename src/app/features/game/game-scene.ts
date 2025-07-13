@@ -10,14 +10,10 @@ export class GameScene extends Phaser.Scene {
   explosions!: Phaser.Physics.Arcade.StaticGroup;
   blocks!: Phaser.Physics.Arcade.StaticGroup;
 
-  // configurations
-  WALL_HEIGHT: number = 48;
-  WALL_WIDTH: number = 48;
-
   // Scale configurations for all game elements
   SCALES = {
-    wall: 0.05,       // Indestructible walls
-    block: 0.05,      // Destructible blocks
+    wall: 0.06,       // Indestructible walls
+    block: 0.07,      // Destructible blocks
     player: 0.04,     // Player character
     bomb: 0.04,       // Bombs placed by player
     explosion: 0.04    // Explosion sprites (increased for visibility)
@@ -55,9 +51,15 @@ export class GameScene extends Phaser.Scene {
     this.load.image('player', 'player.png');
     // this.load.image('bomb', 'bomb.png');
     this.load.image('explosion', 'explosion.png');
+    this.load.image('grass', 'grass.png');
   }
 
   create() {
+    const {width, height} = this.scale;
+    this.add.tileSprite(0, 0, width, height, 'grass')
+      .setOrigin(0, 0);
+    // .setScrollFactor(0);
+
     // create keys
     this.spaceKey = this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
