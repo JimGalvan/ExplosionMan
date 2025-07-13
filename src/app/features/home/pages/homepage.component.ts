@@ -6,18 +6,28 @@ import {GameScene} from '../../game/game-scene'
   selector: 'home-page',
   templateUrl: 'homepage.component.html',
   styles: `
-    /*#game-container {*/
-    /*  !*width: 100%;*!*/
-    /*  !*height: 100%;*!*/
-    /*  !*display: flex;*!*/
-    /*  !*justify-content: center;*!*/
-    /*  !*align-items: center;*!*/
-    /*  !*overflow: auto;*!*/
-    /*}*/
+    :host {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      z-index: 1000;
+    }
 
-    /*!*canvas {*!*/
-    /*!*  display: block;*!*/
-    /*!*}*!*/
+    #game-container {
+      width: 100%;
+      height: 100%;
+      display: block;
+      position: relative;
+    }
+
+    #game-container canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
+    }
   `
 })
 export class HomePageComponent {
@@ -38,7 +48,7 @@ export class HomePageComponent {
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
       width: window.innerWidth,
-      height: 600,
+      height: window.innerHeight,
       physics: {
         default: 'arcade',
         arcade: {
@@ -46,7 +56,7 @@ export class HomePageComponent {
         }
       },
       scale: {
-        mode: Phaser.Scale.FIT,
+        mode: Phaser.Scale.RESIZE,
         autoCenter: Phaser.Scale.CENTER_BOTH
       },
       scene: new GameScene(this),
@@ -54,6 +64,11 @@ export class HomePageComponent {
     };
 
     this.game = new Phaser.Game(config);
+    
+    // Handle window resize
+    window.addEventListener('resize', () => {
+      this.game.scale.resize(window.innerWidth, window.innerHeight);
+    });
   }
 
 }

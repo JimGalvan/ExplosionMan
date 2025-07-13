@@ -6,12 +6,32 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+/* HTML & Body for full-screen gaming */
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  -webkit-overflow-scrolling: touch;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Prevent mobile scrolling and improve touch */
+body, html {
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
 /* Body & Background */
 body {
   background-color: #1e1e2f;
   color: #f1f1f1;
   line-height: 1.6;
-  padding: 20px;
+  padding: 0;
 }
 
 /* Links */

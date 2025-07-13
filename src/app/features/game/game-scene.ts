@@ -99,6 +99,9 @@ export class GameScene extends Phaser.Scene {
     this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
     this.cameras.main.setBounds(middleX, middleY, worldWidth, worldHeight);
 
+    // Handle resize events
+    this.scale.on('resize', this.handleResize, this);
+
     // create static objects
     this.bombs = this.physics.add.staticGroup();
     this.bombs.world = this.physics.world;
@@ -168,8 +171,11 @@ export class GameScene extends Phaser.Scene {
   createMobileButtons() {
     const {width, height} = this.scale;
     const buttonSize = this.SCALES.button;
-    const margin = 80;
-    const buttonSpacing = 120;
+    
+    // Responsive button positioning
+    const isLandscape = width > height;
+    const margin = isLandscape ? 60 : 80;
+    const buttonSpacing = isLandscape ? 100 : 120;
 
     // Create movement buttons (left side)
     // Up button
@@ -200,8 +206,9 @@ export class GameScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setDepth(1000);
 
-    // Bomb button (right side)
-    this.bombButton = this.add.image(width - margin - 60, height - margin - buttonSpacing, 'place_bomb_button')
+    // Bomb button (right side) - adjusted for landscape
+    const bombButtonX = width - margin - (isLandscape ? 40 : 60);
+    this.bombButton = this.add.image(bombButtonX, height - margin - buttonSpacing, 'place_bomb_button')
       .setScale(buttonSize)
       .setInteractive()
       .setScrollFactor(0)
@@ -209,6 +216,30 @@ export class GameScene extends Phaser.Scene {
 
     // Add button event listeners
     this.setupButtonEvents();
+  }
+
+  handleResize() {
+    // Update button positions when screen resizes
+    this.updateButtonPositions();
+  }
+
+  updateButtonPositions() {
+    if (!this.upButton) return; // Exit if buttons haven't been created yet
+    
+    const {width, height} = this.scale;
+    const isLandscape = width > height;
+    const margin = isLandscape ? 60 : 80;
+    const buttonSpacing = isLandscape ? 100 : 120;
+
+    // Update movement buttons positions
+    this.upButton.setPosition(margin + buttonSpacing, height - margin - buttonSpacing * 2);
+    this.downButton.setPosition(margin + buttonSpacing, height - margin);
+    this.leftButton.setPosition(margin, height - margin - buttonSpacing);
+    this.rightButton.setPosition(margin + buttonSpacing * 2, height - margin - buttonSpacing);
+    
+    // Update bomb button position
+    const bombButtonX = width - margin - (isLandscape ? 40 : 60);
+    this.bombButton.setPosition(bombButtonX, height - margin - buttonSpacing);
   }
 
   setupButtonEvents() {
