@@ -33,7 +33,7 @@ export class GameScene extends Phaser.Scene {
     player: 0.04,     // Player character
     bomb: 0.04,       // Bombs placed by player
     explosion: 0.04,  // Explosion sprites (increased for visibility)
-    button: 0.08      // Mobile buttons
+    button: 0.12      // Mobile buttons (increased for better touch experience)
   };
 
   // Timing configurations
@@ -183,28 +183,32 @@ export class GameScene extends Phaser.Scene {
       .setScale(buttonSize)
       .setInteractive()
       .setScrollFactor(0)
-      .setDepth(1000);
+      .setDepth(1000)
+      .setAlpha(0.7);
 
     // Down button
     this.downButton = this.add.image(margin + buttonSpacing, height - margin, 'down_button')
       .setScale(buttonSize)
       .setInteractive()
       .setScrollFactor(0)
-      .setDepth(1000);
+      .setDepth(1000)
+      .setAlpha(0.7);
 
     // Left button
     this.leftButton = this.add.image(margin, height - margin - buttonSpacing, 'left_button')
       .setScale(buttonSize)
       .setInteractive()
       .setScrollFactor(0)
-      .setDepth(1000);
+      .setDepth(1000)
+      .setAlpha(0.7);
 
     // Right button
     this.rightButton = this.add.image(margin + buttonSpacing * 2, height - margin - buttonSpacing, 'right_button')
       .setScale(buttonSize)
       .setInteractive()
       .setScrollFactor(0)
-      .setDepth(1000);
+      .setDepth(1000)
+      .setAlpha(0.7);
 
     // Bomb button (right side) - adjusted for landscape
     const bombButtonX = width - margin - (isLandscape ? 40 : 60);
@@ -212,7 +216,8 @@ export class GameScene extends Phaser.Scene {
       .setScale(buttonSize)
       .setInteractive()
       .setScrollFactor(0)
-      .setDepth(1000);
+      .setDepth(1000)
+      .setAlpha(0.7);
 
     // Add button event listeners
     this.setupButtonEvents();
@@ -246,68 +251,68 @@ export class GameScene extends Phaser.Scene {
     // Movement buttons
     this.upButton.on('pointerdown', () => {
       this.mobileInput.up = true;
-      this.upButton.setTint(0xcccccc);
+      this.upButton.setTint(0xcccccc).setAlpha(0.9);
     });
     this.upButton.on('pointerup', () => {
       this.mobileInput.up = false;
-      this.upButton.clearTint();
+      this.upButton.clearTint().setAlpha(0.7);
     });
     this.upButton.on('pointerout', () => {
       this.mobileInput.up = false;
-      this.upButton.clearTint();
+      this.upButton.clearTint().setAlpha(0.7);
     });
 
     this.downButton.on('pointerdown', () => {
       this.mobileInput.down = true;
-      this.downButton.setTint(0xcccccc);
+      this.downButton.setTint(0xcccccc).setAlpha(0.9);
     });
     this.downButton.on('pointerup', () => {
       this.mobileInput.down = false;
-      this.downButton.clearTint();
+      this.downButton.clearTint().setAlpha(0.7);
     });
     this.downButton.on('pointerout', () => {
       this.mobileInput.down = false;
-      this.downButton.clearTint();
+      this.downButton.clearTint().setAlpha(0.7);
     });
 
     this.leftButton.on('pointerdown', () => {
       this.mobileInput.left = true;
-      this.leftButton.setTint(0xcccccc);
+      this.leftButton.setTint(0xcccccc).setAlpha(0.9);
     });
     this.leftButton.on('pointerup', () => {
       this.mobileInput.left = false;
-      this.leftButton.clearTint();
+      this.leftButton.clearTint().setAlpha(0.7);
     });
     this.leftButton.on('pointerout', () => {
       this.mobileInput.left = false;
-      this.leftButton.clearTint();
+      this.leftButton.clearTint().setAlpha(0.7);
     });
 
     this.rightButton.on('pointerdown', () => {
       this.mobileInput.right = true;
-      this.rightButton.setTint(0xcccccc);
+      this.rightButton.setTint(0xcccccc).setAlpha(0.9);
     });
     this.rightButton.on('pointerup', () => {
       this.mobileInput.right = false;
-      this.rightButton.clearTint();
+      this.rightButton.clearTint().setAlpha(0.7);
     });
     this.rightButton.on('pointerout', () => {
       this.mobileInput.right = false;
-      this.rightButton.clearTint();
+      this.rightButton.clearTint().setAlpha(0.7);
     });
 
     // Bomb button
     this.bombButton.on('pointerdown', () => {
       this.mobileInput.bomb = true;
-      this.bombButton.setTint(0xcccccc);
+      this.bombButton.setTint(0xcccccc).setAlpha(0.9);
     });
     this.bombButton.on('pointerup', () => {
       this.mobileInput.bomb = false;
-      this.bombButton.clearTint();
+      this.bombButton.clearTint().setAlpha(0.7);
     });
     this.bombButton.on('pointerout', () => {
       this.mobileInput.bomb = false;
-      this.bombButton.clearTint();
+      this.bombButton.clearTint().setAlpha(0.7);
     });
   }
 
