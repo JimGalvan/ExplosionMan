@@ -1,5 +1,7 @@
 import {HomePageComponent} from '../home/pages/homepage.component';
 import Phaser from 'phaser';
+import {MobileButtonManager} from './mobile-button-manager';
+import Sprite = Phaser.GameObjects.Sprite;
 
 export class GameScene extends Phaser.Scene {
   // player state
@@ -12,13 +14,10 @@ export class GameScene extends Phaser.Scene {
   bombs!: Phaser.Physics.Arcade.StaticGroup;
   explosions!: Phaser.Physics.Arcade.StaticGroup;
   blocks!: Phaser.Physics.Arcade.StaticGroup;
+  enemies!: Phaser.Physics.Arcade.Group;
 
-  // Mobile buttons
-  upButton!: Phaser.GameObjects.Image;
-  downButton!: Phaser.GameObjects.Image;
-  leftButton!: Phaser.GameObjects.Image;
-  rightButton!: Phaser.GameObjects.Image;
-  bombButton!: Phaser.GameObjects.Image;
+  // Mobile button manager
+  private mobileButtonManager!: MobileButtonManager;
 
   // Mobile input states
   mobileInput = {
@@ -31,12 +30,12 @@ export class GameScene extends Phaser.Scene {
 
   // Scale configurations for all game elements
   SCALES = {
+    enemy: 0.04,
     wall: 0.06,       // Indestructible walls
     block: 0.07,      // Destructible blocks
     player: 0.04,     // Player character
     bomb: 0.04,       // Bombs placed by player
     explosion: 0.04,  // Explosion sprites (increased for visibility)
-    button: 0.16      // Mobile buttons (increased for better touch experience)
   };
 
   // Timing configurations
@@ -77,6 +76,7 @@ export class GameScene extends Phaser.Scene {
     this.load.image('bomb', 'bomb.png');
     this.load.image('explosion', 'explosion.png');
     this.load.image('grass', 'grass.png');
+    this.load.image('enemy', 'enemy.png');
 
     // Load mobile button assets
     this.load.image('up_button', 'buttons/up_button.png');
@@ -111,11 +111,10 @@ export class GameScene extends Phaser.Scene {
 
     // create static objects
     this.bombs = this.physics.add.staticGroup();
-    this.bombs.world = this.physics.world;
     this.walls = this.physics.add.staticGroup();
-    this.walls.world = this.physics.world;
     this.explosions = this.physics.add.staticGroup();
     this.blocks = this.physics.add.staticGroup();
+    this.enemies = this.physics.add.group();
 
     const level = [
       'WWWWWWWWWWWWWWW',
@@ -127,7 +126,7 @@ export class GameScene extends Phaser.Scene {
       'WWWB WBWB BW WW',
       'W B   B   B B W',
       'WW WBWBW BW WBW',
-      'W B B     B   W',
+      'W B B  E   B  W',
       'WWWBW BW WB WBW',
       'W     B B B   W',
       'WWWWWWWWWWWWWWW',
@@ -150,19 +149,22 @@ export class GameScene extends Phaser.Scene {
           this.player = this.physics.add.sprite(x * this.GAME_CONFIG.playerStartX, y * this.GAME_CONFIG.playerStartY, 'player'); // Center of tile
           this.player.setScale(this.SCALES.player);
           this.player.refreshBody();
-          // this.player.body.setSize(100,20)
           this.player.setCollideWorldBounds(true);
           this.cameras.main.startFollow(this.player);
+        } else if (level[y][x] === 'E') {
+          const enemy = this.enemies.create(x * this.GAME_CONFIG.gridSize, y * this.GAME_CONFIG.gridSize, 'enemy'); // Center of tile
+          enemy.setCollideWorldBounds(true);
+          enemy.setBounce(1);
+          enemy.setScale(this.SCALES.enemy);
+          enemy.setData('direction', 1); // 1 for right, -1 for left
+          enemy.refreshBody();
         }
       }
     }
 
-    // Create mobile buttons
-    this.createMobileButtons();
-
-    // Share the group with Angular component
-    this.component.walls = this.walls;
-    // this.component.bombs = this.bombs;
+    // Create mobile button manager and buttons
+    this.mobileButtonManager = new MobileButtonManager(this, this.mobileInput);
+    this.mobileButtonManager.createMobileButtons();
 
     // Enable collisions between player and walls
     this.physics.add.collider(this.player, this.walls);
@@ -170,157 +172,17 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.player, this.explosions, this.handlePlayerAndExplosionCollision, undefined, this);
     this.physics.add.collider(this.explosions, this.walls);
     this.physics.add.collider(this.player, this.blocks);
+    this.physics.add.collider(this.player, this.enemies);
+    this.physics.add.collider(this.enemies, this.blocks);
+    this.physics.add.collider(this.enemies, this.walls);
 
     // Setup cursor keys
     this.cursors = this.input.keyboard!.createCursorKeys();
   }
 
-  createMobileButtons() {
-    const {width, height} = this.scale;
-    const buttonSize = this.SCALES.button;
-
-    // Responsive button positioning
-    const isLandscape = width > height;
-    const margin = isLandscape ? 60 : 80;
-    const buttonSpacing = isLandscape ? 100 : 120;
-
-    // Create movement buttons (left side)
-    // Up button
-    this.upButton = this.add.image(margin + buttonSpacing, height - margin - buttonSpacing * 2, 'up_button')
-      .setScale(buttonSize)
-      .setInteractive()
-      .setScrollFactor(0)
-      .setDepth(1000)
-      .setAlpha(0.7);
-
-    // Down button
-    this.downButton = this.add.image(margin + buttonSpacing, height - margin - 20, 'down_button')
-      .setScale(buttonSize)
-      .setInteractive()
-      .setScrollFactor(0)
-      .setDepth(1000)
-      .setAlpha(0.7);
-
-    // Left button
-    this.leftButton = this.add.image(margin, height - margin - buttonSpacing, 'left_button')
-      .setScale(buttonSize)
-      .setInteractive()
-      .setScrollFactor(0)
-      .setDepth(1000)
-      .setAlpha(0.7);
-
-    // Right button
-    this.rightButton = this.add.image(margin + buttonSpacing * 2, height - margin - buttonSpacing, 'right_button')
-      .setScale(buttonSize)
-      .setInteractive()
-      .setScrollFactor(0)
-      .setDepth(1000)
-      .setAlpha(0.7);
-
-    // Bomb button (right side) - adjusted for landscape
-    const bombButtonX = width - margin - (isLandscape ? 40 : 60);
-    this.bombButton = this.add.image(bombButtonX, height - margin - buttonSpacing, 'place_bomb_button')
-      .setScale(buttonSize)
-      .setInteractive()
-      .setScrollFactor(0)
-      .setDepth(1000)
-      .setAlpha(0.7);
-
-    // Add button event listeners
-    this.setupButtonEvents();
-  }
-
   handleResize() {
     // Update button positions when screen resizes
-    this.updateButtonPositions();
-  }
-
-  updateButtonPositions() {
-    if (!this.upButton) return; // Exit if buttons haven't been created yet
-
-    const {width, height} = this.scale;
-    const isLandscape = width > height;
-    const margin = isLandscape ? 60 : 80;
-    const buttonSpacing = isLandscape ? 100 : 120;
-
-    // Update movement buttons positions
-    this.upButton.setPosition(margin + buttonSpacing, height - margin - buttonSpacing * 2);
-    this.downButton.setPosition(margin + buttonSpacing, height - margin);
-    this.leftButton.setPosition(margin, height - margin - buttonSpacing);
-    this.rightButton.setPosition(margin + buttonSpacing * 2, height - margin - buttonSpacing);
-
-    // Update bomb button position
-    const bombButtonX = width - margin - (isLandscape ? 40 : 60);
-    this.bombButton.setPosition(bombButtonX, height - margin - buttonSpacing);
-  }
-
-  setupButtonEvents() {
-    // Movement buttons
-    this.upButton.on('pointerdown', () => {
-      this.mobileInput.up = true;
-      this.upButton.setTint(0xcccccc).setAlpha(0.9);
-    });
-    this.upButton.on('pointerup', () => {
-      this.mobileInput.up = false;
-      this.upButton.clearTint().setAlpha(0.7);
-    });
-    this.upButton.on('pointerout', () => {
-      this.mobileInput.up = false;
-      this.upButton.clearTint().setAlpha(0.7);
-    });
-
-    this.downButton.on('pointerdown', () => {
-      this.mobileInput.down = true;
-      this.downButton.setTint(0xcccccc).setAlpha(0.9);
-    });
-    this.downButton.on('pointerup', () => {
-      this.mobileInput.down = false;
-      this.downButton.clearTint().setAlpha(0.7);
-    });
-    this.downButton.on('pointerout', () => {
-      this.mobileInput.down = false;
-      this.downButton.clearTint().setAlpha(0.7);
-    });
-
-    this.leftButton.on('pointerdown', () => {
-      this.mobileInput.left = true;
-      this.leftButton.setTint(0xcccccc).setAlpha(0.9);
-    });
-    this.leftButton.on('pointerup', () => {
-      this.mobileInput.left = false;
-      this.leftButton.clearTint().setAlpha(0.7);
-    });
-    this.leftButton.on('pointerout', () => {
-      this.mobileInput.left = false;
-      this.leftButton.clearTint().setAlpha(0.7);
-    });
-
-    this.rightButton.on('pointerdown', () => {
-      this.mobileInput.right = true;
-      this.rightButton.setTint(0xcccccc).setAlpha(0.9);
-    });
-    this.rightButton.on('pointerup', () => {
-      this.mobileInput.right = false;
-      this.rightButton.clearTint().setAlpha(0.7);
-    });
-    this.rightButton.on('pointerout', () => {
-      this.mobileInput.right = false;
-      this.rightButton.clearTint().setAlpha(0.7);
-    });
-
-    // Bomb button
-    this.bombButton.on('pointerdown', () => {
-      this.mobileInput.bomb = true;
-      this.bombButton.setTint(0xcccccc).setAlpha(0.9);
-    });
-    this.bombButton.on('pointerup', () => {
-      this.mobileInput.bomb = false;
-      this.bombButton.clearTint().setAlpha(0.7);
-    });
-    this.bombButton.on('pointerout', () => {
-      this.mobileInput.bomb = false;
-      this.bombButton.clearTint().setAlpha(0.7);
-    });
+    this.mobileButtonManager?.updateButtonPositions();
   }
 
   override update() {
@@ -330,6 +192,22 @@ export class GameScene extends Phaser.Scene {
 
     if (!body) return;
     body.setVelocity(0);
+
+    // enemy movement
+    // console.log("enemies amount" + this.enemies.children.size)
+    console.log("enemies amount " + this.enemies.getLength())
+
+    this.enemies.children.iterate((child: any): any => {
+      const enemy = child as Phaser.Physics.Arcade.Sprite;
+      console.log("enemy obj: " + enemy)
+      if (enemy.x >= 500) {
+        enemy.setVelocityX(-100);
+        enemy.setData('direction', -1);
+      } else if (enemy.x <= 100) {
+        enemy.setVelocityX(100);
+        enemy.setData('direction', 1);
+      }
+    });
 
     // Handle keyboard input
     if (this.cursors.left?.isDown || this.mobileInput.left) {
