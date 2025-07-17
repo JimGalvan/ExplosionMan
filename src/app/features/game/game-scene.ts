@@ -2,6 +2,7 @@ import {HomePageComponent} from '../home/pages/homepage.component';
 import Phaser from 'phaser';
 import {MobileButtonManager} from './mobile-button-manager';
 import Sprite = Phaser.GameObjects.Sprite;
+import Random = Phaser.Math.Angle.Random;
 
 export class GameScene extends Phaser.Scene {
   // player state
@@ -59,6 +60,16 @@ export class GameScene extends Phaser.Scene {
     wallImageSize: 800,          // Original wall.png dimensions (you'd need to check this)
     blockImageSize: 600,         // Original block.png dimensions (you'd need to check this)
   };
+
+  Direction = Object.freeze({
+    UP: 'UP',
+    DOWN: 'DOWN',
+    LEFT: 'LEFT',
+    RIGHT: 'RIGHT'
+  });
+
+  // enemies
+  enemiesDirections = {}
 
   // other
   spaceKey!: Phaser.Input.Keyboard.Key;
@@ -125,10 +136,10 @@ export class GameScene extends Phaser.Scene {
       'W   B   B B   W',
       'WWWB WBWB BW WW',
       'W B   B   B B W',
-      'WW WBWBW BW WBW',
-      'W B B  E   B  W',
+      'WW WBWBWWWW WBW',
+      'W B BWW E WW  W',
       'WWWBW BW WB WBW',
-      'W     B B B   W',
+      'W     B W B   W',
       'WWWWWWWWWWWWWWW',
     ];
 
@@ -153,10 +164,11 @@ export class GameScene extends Phaser.Scene {
           this.cameras.main.startFollow(this.player);
         } else if (level[y][x] === 'E') {
           const enemy = this.enemies.create(x * this.GAME_CONFIG.gridSize, y * this.GAME_CONFIG.gridSize, 'enemy'); // Center of tile
+          this.setRandomDirection(enemy);
           enemy.setCollideWorldBounds(true);
+          enemy.body.onWorldBounds = true;
           enemy.setBounce(1);
           enemy.setScale(this.SCALES.enemy);
-          enemy.setData('direction', 1); // 1 for right, -1 for left
           enemy.refreshBody();
         }
       }
@@ -173,16 +185,104 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.collider(this.explosions, this.walls);
     this.physics.add.collider(this.player, this.blocks);
     this.physics.add.collider(this.player, this.enemies);
-    this.physics.add.collider(this.enemies, this.blocks);
-    this.physics.add.collider(this.enemies, this.walls);
+    this.physics.add.collider(this.enemies, this.blocks, this.handleEnemiesAndBlocksCollision, undefined, this);
+    this.physics.add.collider(this.enemies, this.walls, this.handleEnemiesAndWallsCollision, undefined, this);
 
     // Setup cursor keys
     this.cursors = this.input.keyboard!.createCursorKeys();
   }
 
+
+  handleEnemiesAndBlocksCollision(enemy: any, wall: any) {
+  }
+
+  getRectangleCoordinates(obj: any): any {
+    class RectangleCoordinates {
+      static Coordinates = class {
+        x: number;
+        y: number;
+
+        constructor(x: number, y: number) {
+          this.x = x;
+          this.y = y;
+        }
+      }
+
+      topRight: InstanceType<typeof RectangleCoordinates.Coordinates>;
+      bottomRight: InstanceType<typeof RectangleCoordinates.Coordinates>;
+      topLeft: InstanceType<typeof RectangleCoordinates.Coordinates>;
+      bottomLeft: InstanceType<typeof RectangleCoordinates.Coordinates>;
+
+      constructor(
+        rightTop: InstanceType<typeof RectangleCoordinates.Coordinates>,
+        rightBottom: InstanceType<typeof RectangleCoordinates.Coordinates>,
+        leftTop: InstanceType<typeof RectangleCoordinates.Coordinates>,
+        leftBottom: InstanceType<typeof RectangleCoordinates.Coordinates>
+      ) {
+        this.topRight = rightTop;
+        this.bottomRight = rightBottom;
+        this.topLeft = leftTop;
+        this.bottomLeft = bottomLeft;
+      }
+    }
+
+    const objBounds = Phaser.Geom.Rectangle = obj.getBounds();
+    const leftSideX = objBounds.x
+    const rightSideX = objBounds.x + objBounds.width;
+
+    const topRight = new RectangleCoordinates.Coordinates(rightSideX, objBounds.top);
+    const bottomRight = new RectangleCoordinates.Coordinates(rightSideX, objBounds.bottom);
+    const topLeft = new RectangleCoordinates.Coordinates(leftSideX, objBounds.top);
+    const bottomLeft = new RectangleCoordinates.Coordinates(leftSideX, objBounds.bottom);
+
+    return new RectangleCoordinates(topRight, bottomRight, topLeft, bottomLeft);
+  }
+
+  debugCoordinates(x: number, y: number) {
+    const graphics = this.add.graphics();
+    graphics.fillStyle(0xff0000, 1); // Red, opaque
+    graphics.fillRect(x, y, 10, 10);
+  }
+
+  handleEnemiesAndWallsCollision(enemy: any, wall: any) {
+    const rectangleCoordinates = this.getRectangleCoordinates(enemy);
+    this.debugCoordinates(rectangleCoordinates.topLeft.x, rectangleCoordinates.topLeft.y);
+
+    // if enemy rectangle right side range is in wall rectangle left side
+    // return left side
+    // else if enemy collided in left to rectangle right side
+    // return rigth side
+
+  }
+
+
+  setEnemyDirection() {
+
+  }
+
   handleResize() {
     // Update button positions when screen resizes
     this.mobileButtonManager?.updateButtonPositions();
+  }
+
+  setRandomDirection(enemy: any) {
+    const directions = Object.values(this.Direction);
+    const randomIndex = Math.floor(Math.random() * directions.length);
+    const direction = directions[randomIndex];
+    switch (direction) {
+      case this.Direction.UP:
+        enemy.setVelocityY(100);
+        return
+      case this.Direction.DOWN:
+        enemy.setVelocityY(-100);
+        return
+      case this.Direction.LEFT:
+        enemy.setVelocityX(-100)
+        return
+      case this.Direction.RIGHT:
+        enemy.setVelocityX(100);
+        return
+    }
   }
 
   override update() {
@@ -192,22 +292,6 @@ export class GameScene extends Phaser.Scene {
 
     if (!body) return;
     body.setVelocity(0);
-
-    // enemy movement
-    // console.log("enemies amount" + this.enemies.children.size)
-    console.log("enemies amount " + this.enemies.getLength())
-
-    this.enemies.children.iterate((child: any): any => {
-      const enemy = child as Phaser.Physics.Arcade.Sprite;
-      console.log("enemy obj: " + enemy)
-      if (enemy.x >= 500) {
-        enemy.setVelocityX(-100);
-        enemy.setData('direction', -1);
-      } else if (enemy.x <= 100) {
-        enemy.setVelocityX(100);
-        enemy.setData('direction', 1);
-      }
-    });
 
     // Handle keyboard input
     if (this.cursors.left?.isDown || this.mobileInput.left) {

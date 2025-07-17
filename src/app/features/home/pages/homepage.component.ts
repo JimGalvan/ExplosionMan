@@ -52,7 +52,7 @@ export class HomePageComponent {
       physics: {
         default: 'arcade',
         arcade: {
-          debug: false
+          debug: true
         }
       },
       scale: {
